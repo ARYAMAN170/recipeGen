@@ -14,14 +14,14 @@ def clean_recipe_ingredients(recipe: Dict) -> Dict:
     logger.info(f"--- Cleaning ingredients for: {title} ---")
 
     raw_ingredients_str = recipe.get("ingredients_raw")
-
+    
     clean_list = []
 
     if raw_ingredients_str and isinstance(raw_ingredients_str, str):
         try:
             # Safely parse the string representation of the list
             parsed_list = ast.literal_eval(raw_ingredients_str)
-
+            
             if isinstance(parsed_list, list):
                 for item in parsed_list:
                     # Further clean each ingredient item
@@ -38,5 +38,5 @@ def clean_recipe_ingredients(recipe: Dict) -> Dict:
 
     # Replace the old 'ingredients_cleaned' with the newly parsed list
     recipe["ingredients_cleaned"] = clean_list
-
+    
     return recipe
