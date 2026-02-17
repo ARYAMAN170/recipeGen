@@ -6,6 +6,8 @@ from typing import Optional
 class Settings(BaseSettings):
     # MongoDB settings
     MONGO_URI: str
+    GEMINI_API_KEY: str
+    FIREWORKS_API_KEY: str
 
     # JWT settings (optional for now)
     JWT_SECRET_KEY: Optional[str] = "your-secret-key-here"

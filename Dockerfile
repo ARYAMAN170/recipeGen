@@ -8,10 +8,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Install minimal system dependencies (and curl for healthcheck)
+# Install minimal system dependencies (and curl for healthcheck) + common Pillow runtime libs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
+    libjpeg62-turbo \
+    zlib1g \
+    libpng16-16 \
+    libtiff6 \
+    libopenjp2-7 \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Python dependencies first to maximize layer caching
@@ -32,4 +37,3 @@ HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl -f http://localhost
 
 # Start FastAPI with Uvicorn
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "2"]
-

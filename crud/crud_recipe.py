@@ -31,8 +31,7 @@ async def get_recipe_by_id(recipe_id: str) -> dict:
 
 async def find_recipes_by_ingredients(ingredients: List[str], limit: int = 50) -> List[dict]:
     """
-    Finds recipes by searching for each ingredient as a substring
-    within the 'CleanedIngredients' array.
+    Finds recipes that contain ALL of the specified ingredients.
 
     Args:
         ingredients: A list of ingredient strings to search for.
@@ -44,16 +43,13 @@ async def find_recipes_by_ingredients(ingredients: List[str], limit: int = 50) -
     if not ingredients:
         return []
 
-    # Build a list of query conditions, one for each ingredient.
-    # Each condition checks if the ingredient exists as a case-insensitive
-    # substring anywhere in the CleanedIngredients array.
-    query_conditions = [
-        {"CleanedIngredients": {"$regex": ingredient.strip(), "$options": "i"}}
-        for ingredient in ingredients
-    ]
-
-    # Use the $and operator to ensure all conditions are met in a document.
-    query = {"$and": query_conditions}
+    # The $all operator matches arrays that contain all elements specified in the query.
+    # We use a case-insensitive regex for each ingredient for better matching.
+    query = {
+        "ingredients_cleaned": {
+            "$all": [f"(?i){ingredient.strip()}" for ingredient in ingredients]
+        }
+    }
 
     cursor = db[COLLECTION_NAME].find(query).limit(limit)
     return await cursor.to_list(length=limit)

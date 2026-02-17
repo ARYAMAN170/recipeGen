@@ -17,14 +17,14 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 from typing import Optional, Dict
 import time
-import urllib3
-
 import pandas as pd
 from tqdm import tqdm
 from dotenv import load_dotenv
 from pymongo import MongoClient
 import cloudinary
 import cloudinary.uploader
+import requests
+import requests
 
 # ---- Logging ----
 logging.basicConfig(
@@ -32,12 +32,6 @@ logging.basicConfig(
     format="%(asctime)s | %(levelname)-6s | %(message)s"
 )
 logger = logging.getLogger("import_recipes")
-
-# Suppress urllib3 connection pool warnings
-logging.getLogger("urllib3.connectionpool").setLevel(logging.ERROR)
-
-# ---- Load .env ----
-load_dotenv()
 
 MONGO_URI = os.getenv("MONGO_URI")
 CLOUD_NAME = os.getenv("CLOUD_NAME")

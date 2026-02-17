@@ -2,9 +2,10 @@
 import fireworks.client
 from fireworks.client.image import ImageInference, Answer
 import io
+from core.config import settings
 
 # Initialize the ImageInference client
-fireworks.client.api_key = "fw_3ZVJjTeW9DXMbVL2kYBQikSw"
+fireworks.client.api_key = settings.FIREWORKS_API_KEY
 inference_client = ImageInference(model="stable-diffusion-xl-1024-v1-0")
 
 async def generate_image_from_prompt(prompt: str) -> bytes:

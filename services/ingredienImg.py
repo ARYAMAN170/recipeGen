@@ -3,17 +3,10 @@ import json
 import google.generativeai as genai
 from PIL import Image
 from typing import List
-
-# It's best practice to load your key from your .env file
-# from dotenv import load_dotenv
-# load_dotenv()
-# GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
-
-# For demonstration, we'll use the hardcoded key from your previous prompts
-GEMINI_API_KEY = "AIzaSyByzQrx5FP9QdSBYz5waqf1tf91KqvNvJQ"
+from core.config import settings
 
 try:
-    genai.configure(api_key=GEMINI_API_KEY)
+    genai.configure(api_key=settings.GEMINI_API_KEY)
 except Exception as e:
     print(f"Error configuring Gemini API: {e}")
 
