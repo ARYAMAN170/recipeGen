@@ -1,7 +1,18 @@
 # stir-backend/app/core/config.py
-
+from dotenv import load_dotenv
 from pydantic_settings import BaseSettings
 from typing import Optional
+import os
+
+# Robustly find .env file
+# This looks for .env in the current directory, or one level up
+env_path = ".env"
+if not os.path.exists(env_path):
+    potential_path = os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env")
+    if os.path.exists(potential_path):
+        env_path = potential_path
+
+load_dotenv(dotenv_path=env_path)
 
 class Settings(BaseSettings):
     # MongoDB settings
@@ -15,7 +26,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
 
     class Config:
-        env_file = ".env"
+        env_file = "../.env"
         extra = "allow"  # Allow extra fields from .env
 
 settings = Settings()

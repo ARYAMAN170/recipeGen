@@ -4,6 +4,10 @@ import logging
 import sys
 from api.api import api_router  # Correct absolute import from project root
 import time
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Configure logging with explicit handlers
 logging.basicConfig(
