@@ -54,6 +54,7 @@ coverage.xml
 # Translations
 *.mo
 *.pot
+*.log
 
 # Django stuff:
 *.log
@@ -86,12 +87,24 @@ ipython_config.py
 
 # pipenv
 #   According to pypa/pipenv#598, it is recommended to include Pipfile.lock in version control.
-#   However, in case of collaboration, if having platform-specific dependencies or dependencies
-#   having no cross-platform support, pipenv may install dependencies that don't work, or not
-#   install all needed dependencies.
-#Pipfile.lock
+#   However, in case of collaboration, if have platform-specific dependencies, or dependencies
+#   having different hashes on different platforms, it may be better to ignore Pipfile.lock.
+# Pipfile.lock
 
-# PEP 582; used by e.g. github.com/David-OConnor/pyflow
+# poetry
+#   Similar to Pipfile.lock, it is generally recommended to include poetry.lock in version control.
+#   This is especially recommended for binary packages to ensure reproducibility, and is more
+#   commonly ignored for libraries.
+#   https://python-poetry.org/docs/basic-usage/#commit-your-poetrylock-file
+# poetry.lock
+
+# pdm
+#   Similar to Pipfile.lock, it is generally recommended to include pdm.lock in version control.
+# pdm.lock
+#   pdm stores its virtual environment in .pdm/
+.pdm/
+
+# PEP 582; used by e.g. pdm
 __pypackages__/
 
 # Celery stuff
@@ -107,8 +120,8 @@ celerybeat.pid
 env/
 venv/
 ENV/
-env.bak
-venv.bak
+env.bak/
+venv.bak/
 
 # Spyder project settings
 .spyderproject
@@ -128,19 +141,42 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# pytype static type analyzer
+# pytype static analyzer
 .pytype/
 
 # Cython debug symbols
 cython_debug/
 
-# VS Code
+### VSCode ###
 .vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.code-workspace
 
-# IDE settings
+# Local History for Visual Studio Code
+.history/
+
+# JetBrains IDEs
 .idea/
 
-# Datasets and large files
-Food Images/
-*.csv
+# Temporary files
+*.tmp
+*.bak
+*.swp
+*~
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Project-specific ignores
+/temp_images/
+/services/img.png
+/services/output.jpg
+/services/test_image.jpg
+/services/generated_recipe_image.png
+import_failures.csv
+*.log
 

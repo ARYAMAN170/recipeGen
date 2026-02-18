@@ -1,68 +1,96 @@
-import os
+import requests
 import json
-import google.generativeai as genai
-from PIL import Image
+import base64
+import os
 from typing import List
 from core.config import settings
 
-try:
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-except Exception as e:
-    print(f"Error configuring Gemini API: {e}")
-
+def encode_image_to_base64(image_path: str) -> str:
+    """Encodes an image file to a base64 string."""
+    if not os.path.exists(image_path):
+        raise FileNotFoundError(f"Image file not found at: {image_path}")
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
 
 def extract_ingredients_from_image(image_path: str) -> List[str]:
     """
-    Extracts a list of ingredients from an image using a Gemini multimodal model.
-
-    Args:
-        image_path: The local file path to the image.
-
-    Returns:
-        A list of identified ingredient strings, or an empty list if an error occurs.
+    Extracts a list of ingredients from an image using the OpenRouter API.
     """
     try:
-        model = genai.GenerativeModel('gemini-2.5-flash')
-        image = Image.open(image_path)
-    except Exception as e:
-        print(f"Failed to initialize model or open image: {e}")
+        base64_image = encode_image_to_base64(image_path)
+    except FileNotFoundError as e:
+        print(e)
         return []
 
-    # The multimodal prompt containing both the text instruction and the image
-    prompt = [
-        """
-        Analyze the provided image of groceries. Identify only the edible food items
-        and ingredients. Ignore any non-food items like bowls, countertops, or packaging text.
+    headers = {
+        "Authorization": f"{settings.OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+    }
 
-        Return your response as a single, valid JSON object with a single key "ingredients",
-        which is an array of strings. For example: {"ingredients": ["tomato", "onion", "garlic"]}.
+    data = {
+        "model": "nvidia/nemotron-nano-12b-v2-vl:free",  # Vision model
+        "messages": [
+            {
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": """
+    Your task is to identify all edible food items in the image.
+    - Focus only on the food ingredients.
+    - Ignore non-food items (e.g., bowls, packaging, text).
+    - Your entire response must be a single, valid JSON object.
+    - The JSON object must have one key: "ingredients".
+    - The value of "ingredients" must be an array of strings.
+    - Do not include markdown, explanations, or any text outside the JSON object.
 
-        Do not include any other text or explanation.
-        """,
-        image
-    ]
+    Example response: {"ingredients": ["tomato", "onion", "garlic"]}
+    """
+                    },
+                    {
+                        "type": "image_url",
+                        "image_url": {
+                            "url": f"data:image/png;base64,{base64_image}"
+                        }
+                    }
+                ]
+            }
+        ]
+    }
 
-    print(f"Sending image '{image_path}' to Gemini for ingredient extraction...")
+    print(f"Sending image '{image_path}' to OpenRouter for ingredient extraction...")
 
     try:
-        response = model.generate_content(prompt)
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            data=json.dumps(data)
+        )
+        response.raise_for_status()
+        response_json = response.json()
 
-        # Clean the response to ensure it's a valid JSON string
-        cleaned_response = response.text.strip().lstrip("```json").rstrip("```")
+        if response_json.get("choices"):
+            assistant_message = response_json["choices"][0]["message"]["content"]
+            try:
+                ingredients_data = json.loads(assistant_message)
+                return ingredients_data.get("ingredients", [])
+            except json.JSONDecodeError:
+                print("Failed to parse ingredients response as JSON.")
+                return []
+        else:
+            print("No ingredients recognized.")
+            return []
 
-        # Parse the JSON and extract the list
-        data = json.loads(cleaned_response)
-        return data.get("ingredients", [])
-
+    except requests.exceptions.RequestException as e:
+        print(f"An API error occurred during ingredient extraction: {e}")
+        return []
     except Exception as e:
-        print(f"An error occurred during ingredient extraction: {e}")
+        print(f"An unexpected error occurred during ingredient extraction: {e}")
         return []
 
 
 # --- Example Usage (you can run this file directly to test) ---
 if __name__ == "__main__":
-    # Create a dummy image file for testing named 'test_image.jpg'
-    # Or replace this path with a real image of groceries on your computer
     test_image_path = "img.png"
 
     if os.path.exists(test_image_path):

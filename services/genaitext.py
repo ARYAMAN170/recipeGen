@@ -1,140 +1,112 @@
 import os
 import json
-import google.generativeai as genai
+import requests
 from typing import List, Dict, Optional
 from PIL import Image
 from io import BytesIO
 from core.config import settings
+from services.ingredient_recognizer import recognize_ingredients_from_image
 
 # --- Configure the Gemini API client ---
-try:
-    genai.configure(api_key=settings.GEMINI_API_KEY)
-except Exception as e:
-    print(f"Error configuring Gemini API: {e}")
+# try:
+#     genai.configure(api_key=settings.GEMINI_API_KEY)
+# except Exception as e:
+#     print(f"Error configuring Gemini API: {e}")
 
 
-def generate_recipe_with_gemini(ingredients: List[str]) -> Dict:
+def generate_recipe_with_openrouter(ingredients: List[str]) -> Dict:
     """
-    Generates a recipe using the Gemini API based on a list of ingredients.
+    Generates a recipe using the OpenRouter API based on a list of ingredients.
     """
-    try:
-        text_model = genai.GenerativeModel('gemini-2.5-flash')
-    except Exception as e:
-        return {"error": f"Could not initialize text model: {e}"}
+    headers = {
+        "Authorization": f"{settings.OPENROUTER_API_KEY}",
+        "Content-Type": "application/json",
+    }
 
-    ingredient_string = ", ".join(ingredients)
+    ingredient_text = ", ".join(ingredients)
+
     prompt = f"""
-    You are a creative and experienced chef. Your task is to create a delicious recipe
-    using the following ingredients: {ingredient_string}.
+    You are a master chef. Create a recipe using the following ingredients: {ingredient_text}.
+    Your response must be a single, valid JSON object.
+    The JSON object must have the following keys: "title", "ingredients", and "instructions".
+    - "title": A creative name for the recipe.
+    - "ingredients": A list of strings, where each string is an ingredient.
+    - "instructions": A single string with the steps to prepare the recipe, separated by newlines.
 
-    Please respond with ONLY a single, valid JSON object. Do not include any text,
-    explanation, or markdown formatting before or after the JSON object.
-
-    The JSON object must have the following structure:
+    Example response:
     {{
-      "title": "A creative and fitting title for the recipe",
-      "description": "A brief, appealing one-sentence description of the dish.",
-      "servings": "e.g., 2-4 people",
-      "prep_time": "e.g., 15 minutes",
-      "cook_time": "e.g., 30 minutes",
+      "title": "Spicy Tomato and Onion Pasta",
       "ingredients": [
-        {{ "item": "Full ingredient name", "quantity": "e.g., 2 cups or 100g" }}
+        "1 pound spaghetti",
+        "2 tablespoons olive oil",
+        "1 large onion, chopped",
+        "3 cloves garlic, minced",
+        "1 (28 ounce) can crushed tomatoes",
+        "1 teaspoon red pepper flakes",
+        "Salt and pepper to taste",
+        "Fresh basil for garnish"
       ],
-      "instructions": [
-        "Step-by-step instruction 1.",
-        "Step-by-step instruction 2.",
-        "..."
-      ]
+      "instructions": "1. Cook spaghetti according to package directions.\\n2. While pasta is cooking, heat olive oil in a large skillet over medium heat. Add onion and cook until softened, about 5 minutes.\\n3. Add garlic and red pepper flakes and cook for another minute until fragrant.\\n4. Stir in crushed tomatoes, salt, and pepper. Bring to a simmer and cook for 10-15 minutes, stirring occasionally.\\n5. Drain spaghetti and add to the skillet with the sauce. Toss to combine.\\n6. Serve immediately, garnished with fresh basil."
     }}
     """
 
-    try:
-        print("Generating recipe with Gemini...")
-        response = text_model.generate_content(prompt)
-        cleaned_response = response.text.strip().lstrip("```json").rstrip("```")
-        recipe_data = json.loads(cleaned_response)
-        return recipe_data
-    except Exception as e:
-        print(f"An error occurred during recipe generation: {e}")
-        return {"error": str(e)}
-
-
-def generate_image_with_gemini(recipe_title: str, recipe_description: str) -> Optional[bytes]:
-    """
-    Generates a recipe image using a Gemini image generation model.
-
-    Args:
-        recipe_title: The title of the recipe.
-        recipe_description: A short description of the recipe.
-
-    Returns:
-        The raw bytes of the generated PNG image, or None if generation fails.
-    """
-    try:
-        # NOTE: The model name for image generation can change.
-        # Use a model specifically designed for this, like 'gemini-1.5-flash' or a future equivalent.
-        image_model = genai.GenerativeModel('gemini-1.5-flash')
-    except Exception as e:
-        print(f"Could not initialize image model: {e}")
-        return None
-
-    # Create a detailed prompt for the image generation model
-    image_prompt = (
-        f"Generate a vibrant, professional food photography image of '{recipe_title}'. "
-        f"{recipe_description}. The dish should look delicious and be presented in a "
-        "fancy restaurant style. The overall theme should be futuristic and sleek, "
-        "inspired by Gemini. High resolution, photorealistic."
-    )
-
-    print(f"\nSending prompt to Gemini for image generation: '{image_prompt}'")
+    data = {
+        "model": "liquid/lfm-2.5-1.2b-instruct:free",
+        "messages": [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+    }
 
     try:
-        # Generate the image content
-        response = image_model.generate_content(image_prompt)
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers=headers,
+            data=json.dumps(data)
+        )
+        response.raise_for_status()
+        response_json = response.json()
 
-        # Extract the image data from the response parts
-        for part in response.candidates[0].content.parts:
-            if part.inline_data is not None:
-                print("Image data received successfully.")
-                return part.inline_data.data  # Return the raw image bytes
+        if response_json.get("choices"):
+            assistant_message = response_json["choices"][0]["message"]["content"]
+            # The model might return a string that is a JSON object.
+            # We need to parse it.
+            try:
+                return json.loads(assistant_message)
+            except json.JSONDecodeError:
+                return {"error": "Failed to parse model response as JSON.", "raw_response": assistant_message}
+        else:
+            return {"error": "No response from model", "details": response_json}
 
-        print("Image generation finished, but no image data was found in the response.")
-        return None
-
+    except requests.exceptions.RequestException as e:
+        return {"error": f"API request failed: {e}"}
     except Exception as e:
-        print(f"An error occurred during image generation: {e}")
-        return None
-
+        return {"error": f"An unexpected error occurred: {e}"}
 
 # --- Example Usage ---
 if __name__ == "__main__":
-    my_ingredients = ["wild salmon fillet", "asparagus spears", "lemon", "dill", "quinoa"]
-    print(f"My ingredients: {', '.join(my_ingredients)}\n")
+    IMAGE_PATH = "img.png"
+    print(f"Starting recipe generation pipeline for image: {IMAGE_PATH}\n")
 
-    # 1. Generate the recipe
-    generated_recipe = generate_recipe_with_gemini(my_ingredients)
+    # 1. Recognize ingredients from the image
+    recognized_ingredients = recognize_ingredients_from_image(IMAGE_PATH)
 
-    if "error" not in generated_recipe:
-        print("\n--- Generated Recipe ---")
-        print(json.dumps(generated_recipe, indent=2))
+    if recognized_ingredients:
+        print("\n--- Recognized Ingredients ---")
+        print(recognized_ingredients)
 
-        # 2. Generate an image for the recipe
-        recipe_title = generated_recipe.get("title", "Untitled Recipe")
-        recipe_desc = generated_recipe.get("description", "A delicious dish")
+        # 2. Generate the recipe with the recognized ingredients
+        print("\n--- Generating Recipe ---")
+        generated_recipe = generate_recipe_with_openrouter(recognized_ingredients)
 
-        image_bytes = generate_image_with_gemini(recipe_title, recipe_desc)
-
-        # 3. Save the generated image to a file
-        if image_bytes:
-            try:
-                image = Image.open(BytesIO(image_bytes))
-                file_name = "generated_recipe_image.png"
-                image.save(file_name)
-                print(f"\n--- Image Saved ---")
-                print(f"Successfully saved image to '{file_name}'")
-            except Exception as e:
-                print(f"Failed to save image: {e}")
+        if "error" not in generated_recipe:
+            print("\n--- Generated Recipe ---")
+            print(json.dumps(generated_recipe, indent=2))
         else:
-            print("\nCould not generate an image for the recipe.")
+            print("\nCould not generate recipe.")
+            print(json.dumps(generated_recipe, indent=2))
+
     else:
-        print("\nCould not generate recipe.")
+        print("\nCould not recognize any ingredients from the image.")

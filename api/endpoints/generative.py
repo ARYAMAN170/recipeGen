@@ -16,10 +16,9 @@ async def generate_recipe_endpoint(payload: IngredientsPayload):
     if not payload.ingredients:
         raise HTTPException(status_code=400, detail="Ingredients list cannot be empty.")
 
-    recipe = genaitext.generate_recipe_with_gemini(payload.ingredients)
+    recipe = genaitext.generate_recipe_with_openrouter(payload.ingredients)
 
     if "error" in recipe:
         raise HTTPException(status_code=500, detail=f"Failed to generate recipe: {recipe['error']}")
 
     return recipe
-
