@@ -20,6 +20,9 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: str
     FIREWORKS_API_KEY: str
     OPENROUTER_API_KEY: str
+    CLOUD_NAME: str
+    CLOUD_API_KEY: str
+    CLOUD_API_SECRET: str
 
     # JWT settings (optional for now)
     JWT_SECRET_KEY: Optional[str] = "your-secret-key-here"

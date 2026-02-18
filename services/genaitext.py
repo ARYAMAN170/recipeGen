@@ -27,27 +27,23 @@ def generate_recipe_with_openrouter(ingredients: List[str]) -> Dict:
 
     prompt = f"""
     You are a master chef. Create a recipe using the following ingredients: {ingredient_text}.
-    Your response must be a single, valid JSON object.
-    The JSON object must have the following keys: "title", "ingredients", and "instructions".
-    - "title": A creative name for the recipe.
-    - "ingredients": A list of strings, where each string is an ingredient.
-    - "instructions": A single string with the steps to prepare the recipe, separated by newlines.
-
-    Example response:
+    Your response must be a single, valid JSON object that conforms to the following structure:
     {{
-      "title": "Spicy Tomato and Onion Pasta",
+      "title": "A creative and fitting title for the recipe",
+      "description": "A brief, appealing one-sentence description of the dish.",
+      "servings": "e.g., 2-4 people",
+      "prep_time": "e.g., 15 minutes",
+      "cook_time": "e.g., 30 minutes",
       "ingredients": [
-        "1 pound spaghetti",
-        "2 tablespoons olive oil",
-        "1 large onion, chopped",
-        "3 cloves garlic, minced",
-        "1 (28 ounce) can crushed tomatoes",
-        "1 teaspoon red pepper flakes",
-        "Salt and pepper to taste",
-        "Fresh basil for garnish"
+        {{ "item": "Full ingredient name", "quantity": "e.g., 2 cups or 100g" }}
       ],
-      "instructions": "1. Cook spaghetti according to package directions.\\n2. While pasta is cooking, heat olive oil in a large skillet over medium heat. Add onion and cook until softened, about 5 minutes.\\n3. Add garlic and red pepper flakes and cook for another minute until fragrant.\\n4. Stir in crushed tomatoes, salt, and pepper. Bring to a simmer and cook for 10-15 minutes, stirring occasionally.\\n5. Drain spaghetti and add to the skillet with the sauce. Toss to combine.\\n6. Serve immediately, garnished with fresh basil."
+      "instructions": [
+        "Step-by-step instruction 1.",
+        "Step-by-step instruction 2."
+      ]
     }}
+
+    Do not include any text, explanation, or markdown formatting before or after the JSON object.
     """
 
     data = {

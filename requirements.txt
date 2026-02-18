@@ -1,9 +1,9 @@
 motor~=3.7.1
 fastapi~=0.118.2
-pydantic~=2.12.1
+pydantic
 cloudinary~=1.44.1
 python-dotenv~=1.1.1
-pydantic-settings~=2.11.0
+pydantic-settings
 pymongo~=4.15.3
 protobuf~=4.25.3
 pillow~=11.3.0
@@ -16,3 +16,4 @@ python-multipart~=0.0.9
 google-generativeai~=0.7.2
 fireworks-ai~=0.15.3
 dnspython~=2.6.1
+watchfiles

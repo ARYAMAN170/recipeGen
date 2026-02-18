@@ -16,6 +16,7 @@ async def read_recipes(skip: int = 0, limit: int = 20):
     """
     # 1. Fetch the raw data
     recipes_from_db = await crud_recipe.get_recipes(skip=skip, limit=limit)
+    print(f"Fetched {len(recipes_from_db)} recipes from DB.")
 
     # 2. Apply the cleaning function to each recipe
     cleaned_recipes = [clean_recipe_ingredients(recipe) for recipe in recipes_from_db]

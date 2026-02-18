@@ -7,4 +7,4 @@ from core.config import settings
 client = motor.motor_asyncio.AsyncIOMotorClient(settings.MONGO_URI)
 
 # Get a specific database
-db = client["recipe_db"]
+db = client["recipesDB"]
